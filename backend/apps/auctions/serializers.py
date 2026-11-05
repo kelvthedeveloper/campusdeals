@@ -37,7 +37,9 @@ class AuctionSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         if obj.image:
             try:
-                return obj.image.url
+                image_url = obj.image.url
+                request = self.context.get('request')
+                return request.build_absolute_uri(image_url) if request else image_url
             except Exception:
                 return None
         return None

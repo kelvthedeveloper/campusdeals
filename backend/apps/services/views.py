@@ -61,13 +61,13 @@ class AdminServiceListCreateView(APIView):
 
     def get(self, request):
         services = Service.objects.all().order_by('name')
-        return Response(ServiceSerializer(services, many=True).data)
+        return Response(ServiceSerializer(services, many=True, context={'request': request}).data)
 
     def post(self, request):
-        serializer = ServiceSerializer(data=request.data)
+        serializer = ServiceSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         service = serializer.save()
-        return Response(ServiceSerializer(service).data, status=status.HTTP_201_CREATED)
+        return Response(ServiceSerializer(service, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
 
 class AdminServiceDetailView(APIView):
@@ -80,7 +80,7 @@ class AdminServiceDetailView(APIView):
         except Service.DoesNotExist:
             return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = ServiceSerializer(service, data=request.data, partial=True)
+        serializer = ServiceSerializer(service, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
@@ -102,4 +102,4 @@ class AdminServiceStatusView(APIView):
         is_active = request.data.get('is_active')
         service.is_active = bool(is_active)
         service.save(update_fields=['is_active'])
-        return Response(ServiceSerializer(service).data)
+        return Response(ServiceSerializer(service, context={'request': request}).data)

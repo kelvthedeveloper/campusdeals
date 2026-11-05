@@ -29,8 +29,8 @@ $env:DJANGO_DEBUG = "1"
 python manage.py runserver 8000
 ```
 
-`DJANGO_DEBUG=1` enables Django's local media route, so uploaded images under
-`backend/media/` can be loaded by the frontend. The frontend dev proxy expects
+Uploaded images under `backend/media/` are served by Django when using local
+file storage, including when `DJANGO_DEBUG=0`. The frontend dev proxy expects
 the backend at `http://127.0.0.1:8000`.
 
 ## Environment variables (DigitalOcean App Platform)
@@ -47,6 +47,9 @@ the backend at `http://127.0.0.1:8000`.
 ### Media storage (local vs S3-compatible)
 
 By default, uploads are stored locally under `MEDIA_ROOT` (good for local dev).
+The app serves these files directly, but local files are not durable on hosted
+platforms with ephemeral filesystems. Configure S3-compatible storage for
+production so images remain available across deploys and restarts.
 
 For DigitalOcean App Platform, use S3-compatible storage (DigitalOcean Spaces) by setting:
 

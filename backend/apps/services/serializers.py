@@ -4,19 +4,17 @@ from .models import Booking, Service
 
 
 class ServiceSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
+    image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Service
         fields = ('id', 'name', 'description', 'image', 'is_active')
 
-    def get_image(self, obj):
-        if obj.image:
-            try:
-                return obj.image.url
-            except Exception:
-                return None
-        return None
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data['image'] and self.context.get('request'):
+            data['image'] = self.context['request'].build_absolute_uri(data['image'])
+        return data
 
 
 class BookingSerializer(serializers.ModelSerializer):

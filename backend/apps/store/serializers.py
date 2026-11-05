@@ -63,6 +63,9 @@ class ProductSerializer(serializers.ModelSerializer):
         try:
             if instance.image:
                 img = instance.image.url
+                request = self.context.get('request')
+                if request:
+                    img = request.build_absolute_uri(img)
         except Exception:
             img = None
         data['image'] = img
