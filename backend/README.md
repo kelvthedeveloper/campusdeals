@@ -12,7 +12,14 @@ This backend is built to match the existing Next.js frontend API calls.
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+Copy-Item .env.example .env
 ```
+
+Edit `backend/.env` with local settings and your own credentials. This file is
+git-ignored; do not commit secrets. Django loads it automatically, while
+environment variables already set by the shell or hosting platform take
+precedence. Leave `USE_CLOUDINARY=0` for local file storage, or add your
+Cloudinary credentials and set it to `1`.
 
 1. Run migrations + create admin
 
@@ -25,7 +32,6 @@ python manage.py createsuperuser
 1. Start server
 
 ```powershell
-$env:DJANGO_DEBUG = "1"
 python manage.py runserver 8000
 ```
 
@@ -44,14 +50,28 @@ the backend at `http://127.0.0.1:8000`.
 - `PAYSTACK_SECRET_KEY` (required for payments initialize)
 - `PAYSTACK_CALLBACK_URL` (optional)
 
-### Media storage (local vs S3-compatible)
+### Media storage (local, Cloudinary, or S3-compatible)
 
 By default, uploads are stored locally under `MEDIA_ROOT` (good for local dev).
 The app serves these files directly, but local files are not durable on hosted
-platforms with ephemeral filesystems. Configure S3-compatible storage for
-production so images remain available across deploys and restarts.
+platforms with ephemeral filesystems. Render is configured to use Cloudinary
+for media, so set these environment variables on the Render backend service:
 
-For DigitalOcean App Platform, use S3-compatible storage (DigitalOcean Spaces) by setting:
+- `USE_CLOUDINARY=1`
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+
+Find the Cloud Name, API Key, and API Secret in the Cloudinary console. Keep
+the API secret private and set it only as a Render secret environment variable.
+Static files continue to use WhiteNoise; only uploaded media is stored in
+Cloudinary. For local development, leave `USE_CLOUDINARY` unset to use local
+media storage. Existing files in local or S3 storage are not copied
+automatically; migrate or re-upload them to Cloudinary before switching if they
+need to remain available.
+
+The optional S3-compatible storage (e.g. DigitalOcean Spaces) remains available
+when Cloudinary is disabled:
 
 - `USE_S3=1`
 - `AWS_ACCESS_KEY_ID`
@@ -89,8 +109,17 @@ Render environment variables to set (recommended):
 - `DJANGO_DEBUG=0`
 - `DJANGO_ALLOWED_HOSTS` (e.g. `your-service.onrender.com`)
 - `DJANGO_CSRF_TRUSTED_ORIGINS` (e.g. `https://your-service.onrender.com`)
-- `DATABASE_URL` (use a Render Postgres instance)
+- `DATABASE_URL` (Supabase PostgreSQL connection URL)
 - `CORS_ALLOWED_ORIGINS` (your frontend URL)
+
+### Connect Render to Supabase PostgreSQL
+
+1. In Supabase, open your project and select **Connect**. Copy the **Session pooler** connection string (port `5432`). This pooler works for a long-running Django service and avoids requiring IPv6 support from the hosting platform.
+2. In Render, open the backend web service's **Environment** settings and set `DATABASE_URL` to that connection string. Keep it as a secret environment variable; do not commit it to this repository. If the database password contains reserved URL characters, use the URL-encoded password from Supabase.
+3. Ensure the URL uses SSL (`sslmode=require`). Django's production database configuration requires SSL for PostgreSQL.
+4. Deploy the service. The configured build command runs `python manage.py migrate` against Supabase and creates/updates the schema.
+
+The app already reads `DATABASE_URL` and uses PostgreSQL when the value starts with `postgres://` or `postgresql://`; no database credentials belong in `render.yaml`. Moving from SQLite does not copy existing records. Export/import any data you need separately before switching production traffic.
 
 ## API endpoints implemented (matching frontend)
 

@@ -3,8 +3,12 @@ from pathlib import Path
 
 import dj_database_url
 from datetime import timedelta
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / '.env')
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-insecure-secret-key')
 DEBUG = os.environ.get('DJANGO_DEBUG', '0') == '1'
@@ -24,6 +28,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'storages',
+    'cloudinary_storage',
+    'cloudinary',
     'apps.accounts',
     'apps.store',
     'apps.auctions',
@@ -90,9 +96,35 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
+USE_CLOUDINARY = os.environ.get('USE_CLOUDINARY', '0') == '1'
+if USE_CLOUDINARY:
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
+        'API_KEY': os.environ.get('CLOUDINARY_API_KEY', ''),
+        'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', ''),
+    }
+    missing_cloudinary_settings = [key for key, value in CLOUDINARY_STORAGE.items() if not value]
+    if missing_cloudinary_settings:
+        raise ImproperlyConfigured(
+            'USE_CLOUDINARY=1 requires CLOUDINARY_CLOUD_NAME, '
+            'CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.'
+        )
+    STORAGES['default'] = {
+        'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
+    }
+
 # Optional S3-compatible storage (e.g. DigitalOcean Spaces)
 USE_S3 = os.environ.get('USE_S3', '0') == '1'
-if USE_S3:
+if USE_S3 and not USE_CLOUDINARY:
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
     AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
     AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
@@ -102,13 +134,8 @@ if USE_S3:
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = False
 
-    STORAGES = {
-        'default': {
-            'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
-        },
-        'staticfiles': {
-            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
-        },
+    STORAGES['default'] = {
+        'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
     }
     MEDIA_URL = os.environ.get('AWS_MEDIA_URL', '') or (f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/" if AWS_S3_ENDPOINT_URL and AWS_STORAGE_BUCKET_NAME else MEDIA_URL)
 

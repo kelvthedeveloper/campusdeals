@@ -16,7 +16,16 @@ services:
         value: "https://*.onrender.com"
       - key: DJANGO_SECRET_KEY
         generateValue: true
+      # Set this in Render to the Supabase Session pooler URL; do not commit credentials.
       - key: DATABASE_URL
+        sync: false
+      - key: USE_CLOUDINARY
+        value: "1"
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
         sync: false
       - key: CORS_ALLOWED_ORIGINS
         sync: false
