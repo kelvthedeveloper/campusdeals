@@ -3,7 +3,8 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import permissions, status
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -11,9 +12,17 @@ from .models import Auction, Bid
 from .serializers import AuctionSerializer
 
 
-class AuctionListView(ListAPIView):
-    permission_classes = [permissions.AllowAny]
+class IsAdminOrReadOnly(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.method in permissions.SAFE_METHODS or bool(
+            request.user and request.user.is_staff
+        )
+
+
+class AuctionListView(ListCreateAPIView):
+    permission_classes = [IsAdminOrReadOnly]
     serializer_class = AuctionSerializer
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
         qs = Auction.objects.all().select_related('owner', 'winner').prefetch_related('bids__bidder')
@@ -22,10 +31,17 @@ class AuctionListView(ListAPIView):
             qs = qs.filter(is_active=True)
         return qs
 
+    def perform_create(self, serializer):
+        serializer.save(
+            owner=self.request.user,
+            current_price=serializer.validated_data['start_price'],
+        )
 
-class AuctionDetailView(RetrieveAPIView):
-    permission_classes = [permissions.AllowAny]
+
+class AuctionDetailView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAdminOrReadOnly]
     serializer_class = AuctionSerializer
+    parser_classes = [MultiPartParser, FormParser]
     queryset = Auction.objects.all().select_related('owner', 'winner').prefetch_related('bids__bidder')
 
 

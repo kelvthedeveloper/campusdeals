@@ -1,6 +1,7 @@
 'use client';
 
 import Swal from 'sweetalert2';
+import { isAxiosError } from 'axios';
 
 export const showSuccess = (title: string, text?: string) => {
     Swal.fire({
@@ -22,6 +23,22 @@ export const showError = (title: string, text?: string) => {
         confirmButtonColor: '#EF4444',
         confirmButtonText: 'OK',
     });
+};
+
+export const getApiErrorMessage = (error: unknown, fallback: string): string => {
+    if (!isAxiosError(error)) return fallback;
+
+    if (error.response && error.response.status >= 500) {
+        return 'The server could not complete this request. Please try again later.';
+    }
+
+    const data: unknown = error.response?.data;
+    if (typeof data === 'string') return data;
+    if (data && typeof data === 'object') {
+        if ('detail' in data && typeof data.detail === 'string') return data.detail;
+        return JSON.stringify(data, null, 2);
+    }
+    return fallback;
 };
 
 export const showWarning = (title: string, text?: string) => {

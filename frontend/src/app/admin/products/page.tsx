@@ -22,7 +22,7 @@ import api from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { Product, Category } from '@/types';
 import { formatMoneyGHS } from '@/utils/money';
-import { showSuccess, showError } from '@/utils/alert';
+import { showSuccess, showError, getApiErrorMessage } from '@/utils/alert';
 
 export default function AdminProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -130,9 +130,7 @@ export default function AdminProductsPage() {
             showSuccess('Product Saved', editingProduct.id ? 'Product updated successfully.' : 'Product created successfully.');
         } catch (error) {
             console.error('Error saving product:', error);
-            const data = (error as any)?.response?.data;
-            const message = data?.detail || (data ? JSON.stringify(data, null, 2) : 'Failed to save product.');
-            showError('Save Failed', message);
+            showError('Save Failed', getApiErrorMessage(error, 'Failed to save product.'));
         } finally {
             setTimeout(() => setIsSaving(false), 300);
         }

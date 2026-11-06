@@ -7,7 +7,7 @@ import Button from '@/components/atoms/Button';
 import Modal from '@/components/atoms/Modal';
 import api from '@/utils/api';
 import { Service } from '@/types';
-import { showSuccess, showError } from '@/utils/alert';
+import { showSuccess, showError, getApiErrorMessage } from '@/utils/alert';
 import { Plus, Search, Edit, Trash2, AlertCircle, Loader2, Briefcase } from 'lucide-react';
 
 export default function AdminServicesCatalogPage() {
@@ -90,12 +90,9 @@ export default function AdminServicesCatalogPage() {
             await fetchServices();
             closeModal();
             showSuccess('Service Saved', editingService.id ? 'Service updated successfully.' : 'Service created successfully.');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error saving service:', error);
-            console.error('Service save error response data:', error?.response?.data);
-            const data = error?.response?.data;
-            const message = typeof data === 'string' ? data : data?.detail || (data && typeof data === 'object' ? JSON.stringify(data, null, 2) : 'Failed to save service.');
-            showError('Save Failed', message);
+            showError('Save Failed', getApiErrorMessage(error, 'Failed to save service.'));
         } finally {
             setIsSaving(false);
         }

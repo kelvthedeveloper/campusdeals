@@ -23,7 +23,7 @@ import {
 import api from '@/utils/api';
 import { Auction, Bid } from '@/types';
 import { formatMoneyGHS } from '@/utils/money';
-import { showSuccess, showError } from '@/utils/alert';
+import { showSuccess, showError, getApiErrorMessage } from '@/utils/alert';
 
 export default function AdminAuctionsPage() {
     const [auctions, setAuctions] = useState<Auction[]>([]);
@@ -80,8 +80,8 @@ export default function AdminAuctionsPage() {
         setIsBidsModalOpen(true);
         setIsBidsLoading(true);
         try {
-            const { data } = await api.get(`/auctions/${auction.id}/bids/`);
-            setAuctionBids(data);
+            const { data } = await api.get(`/auctions/${auction.id}/`);
+            setAuctionBids(Array.isArray(data.bids) ? data.bids : []);
         } catch (error) {
             console.error('Error fetching bids:', error);
         } finally {
@@ -164,7 +164,7 @@ export default function AdminAuctionsPage() {
             showSuccess('Auction Saved', 'Auction updated successfully.');
         } catch (error) {
             console.error('Error saving auction:', error);
-            showError('Failed', 'Failed to save auction.');
+            showError('Save Failed', getApiErrorMessage(error, 'Failed to save auction.'));
         } finally {
             setIsSaving(false);
         }
@@ -224,7 +224,7 @@ export default function AdminAuctionsPage() {
             showSuccess('Auction Created', 'New auction has been created.');
         } catch (error) {
             console.error('Error creating auction:', error);
-            showError('Failed', 'Failed to create auction.');
+            showError('Create Failed', getApiErrorMessage(error, 'Failed to create auction.'));
         } finally {
             setIsSaving(false);
         }

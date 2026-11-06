@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from .models import Auction, Bid
@@ -13,13 +14,21 @@ class BidSerializer(serializers.ModelSerializer):
 
 
 class AuctionSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
+    image = serializers.ImageField(required=False, allow_null=True)
     owner = serializers.CharField(source='owner.username', read_only=True)
     winner = serializers.CharField(source='winner.username', read_only=True)
+    winner_id = serializers.PrimaryKeyRelatedField(
+        source='winner',
+        queryset=get_user_model().objects.all(),
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
     bids = BidSerializer(many=True, read_only=True)
 
     class Meta:
         model = Auction
+        read_only_fields = ('current_price', 'owner')
         fields = (
             'id',
             'title',
@@ -31,15 +40,20 @@ class AuctionSerializer(serializers.ModelSerializer):
             'owner',
             'is_active',
             'winner',
+            'winner_id',
             'bids',
         )
 
-    def get_image(self, obj):
-        if obj.image:
-            try:
-                image_url = obj.image.url
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        image = None
+        try:
+            if instance.image:
+                image = instance.image.url
                 request = self.context.get('request')
-                return request.build_absolute_uri(image_url) if request else image_url
-            except Exception:
-                return None
-        return None
+                if request:
+                    image = request.build_absolute_uri(image)
+        except Exception:
+            image = None
+        data['image'] = image
+        return data
