@@ -12,6 +12,7 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=30, blank=True)
     address = models.TextField(blank=True)
     profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)
+    google_sub = models.CharField(max_length=255, unique=True, null=True, blank=True, default=None)
 
     def save(self, *args, **kwargs):
         if self.is_superuser:

@@ -1,5 +1,13 @@
+import logging
+import secrets
+
+from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
-from django.db import models
+from django.db import models, transaction
+from django.utils.text import slugify
+from google.auth.exceptions import GoogleAuthError
+from google.auth.transport.requests import Request as GoogleAuthRequest
+from google.oauth2 import id_token
 from rest_framework import permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
@@ -7,9 +15,16 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import PlatformSettings
-from .serializers import PasswordChangeSerializer, PlatformSettingsSerializer, RegisterSerializer, UserSerializer
+from .serializers import (
+    GoogleAuthSerializer,
+    PasswordChangeSerializer,
+    PlatformSettingsSerializer,
+    RegisterSerializer,
+    UserSerializer,
+)
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 def _tokens_for_user(user: User) -> dict:
@@ -42,6 +57,88 @@ class LoginView(APIView):
 
         tokens = _tokens_for_user(user)
         return Response(tokens)
+
+
+class GoogleLoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        if not settings.GOOGLE_CLIENT_ID:
+            return Response(
+                {'detail': 'Google sign-in is not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        serializer = GoogleAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            claims = id_token.verify_oauth2_token(
+                serializer.validated_data['credential'],
+                GoogleAuthRequest(),
+                audience=settings.GOOGLE_CLIENT_ID,
+            )
+        except ValueError:
+            return Response({'detail': 'Invalid Google credential'}, status=status.HTTP_400_BAD_REQUEST)
+        except GoogleAuthError:
+            logger.exception('Google ID token verification is unavailable')
+            return Response(
+                {'detail': 'Google sign-in is temporarily unavailable'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        google_sub = claims.get('sub')
+        raw_email = claims.get('email')
+        email = raw_email.strip().lower() if isinstance(raw_email, str) else ''
+        if not isinstance(google_sub, str) or not google_sub or not email or claims.get('email_verified') is not True:
+            return Response(
+                {'detail': 'Google must provide a verified email address'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            user = User.objects.filter(google_sub=google_sub).first()
+            if user is None:
+                matching_users = list(User.objects.filter(email__iexact=email)[:2])
+                if len(matching_users) > 1:
+                    return Response(
+                        {'detail': 'Multiple accounts use this email. Contact support to link Google sign-in.'},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+
+                if matching_users:
+                    user = matching_users[0]
+                    if user.google_sub and user.google_sub != google_sub:
+                        return Response(
+                            {'detail': 'This account is linked to a different Google account.'},
+                            status=status.HTTP_409_CONFLICT,
+                        )
+                else:
+                    username_base = slugify(email.partition('@')[0])[:140] or 'google-user'
+                    username = f'{username_base}-{secrets.token_hex(4)}'
+                    while User.objects.filter(username=username).exists():
+                        username = f'{username_base}-{secrets.token_hex(4)}'
+
+                    given_name = claims.get('given_name')
+                    family_name = claims.get('family_name')
+                    user = User(
+                        username=username,
+                        email=email,
+                        first_name=given_name[:150] if isinstance(given_name, str) else '',
+                        last_name=family_name[:150] if isinstance(family_name, str) else '',
+                        google_sub=google_sub,
+                    )
+                    user.set_unusable_password()
+                    user.save()
+
+            if not user.is_active:
+                return Response({'detail': 'User is inactive'}, status=status.HTTP_403_FORBIDDEN)
+
+            if user.google_sub is None:
+                user.google_sub = google_sub
+                user.save(update_fields=['google_sub'])
+
+        return Response({**_tokens_for_user(user), 'username': user.username})
 
 
 class RefreshView(APIView):

@@ -56,6 +56,10 @@ class RegisterSerializer(serializers.Serializer):
         return user
 
 
+class GoogleAuthSerializer(serializers.Serializer):
+    credential = serializers.CharField(trim_whitespace=True)
+
+
 class PasswordChangeSerializer(serializers.Serializer):
     current_password = serializers.CharField(write_only=True)
     new_password = serializers.CharField(write_only=True)

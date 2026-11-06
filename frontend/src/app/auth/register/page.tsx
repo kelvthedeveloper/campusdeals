@@ -8,9 +8,12 @@ import Card from '@/components/molecules/Card';
 import Input from '@/components/atoms/Input';
 import Button from '@/components/atoms/Button';
 import { UserPlus } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 
 export default function RegisterPage() {
     const router = useRouter();
+    const { login } = useAuth();
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -19,6 +22,23 @@ export default function RegisterPage() {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    const handleGoogleCredential = async (credential: string) => {
+        setLoading(true);
+        setError('');
+        try {
+            const { data } = await api.post('/auth/google/', { credential });
+            await login({ access: data.access, refresh: data.refresh }, data.username);
+            const params = new URLSearchParams(window.location.search);
+            router.push(params.get('redirect') || '/dashboard');
+            router.refresh();
+        } catch (err: unknown) {
+            const error = err as { response?: { data?: { detail?: string } } };
+            setError(error.response?.data?.detail || 'Google sign-up failed. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -113,6 +133,13 @@ export default function RegisterPage() {
                             </Button>
                         </div>
                     </form>
+
+                    <div className="my-6 flex items-center gap-3 text-xs font-medium text-secondary">
+                        <div className="h-px flex-1 bg-slate-200" />
+                        OR
+                        <div className="h-px flex-1 bg-slate-200" />
+                    </div>
+                    <GoogleAuthButton mode="signup" onCredential={handleGoogleCredential} />
 
                     <div className="mt-8 border-t border-slate-100 pt-6 text-center">
                         <p className="text-sm text-secondary">

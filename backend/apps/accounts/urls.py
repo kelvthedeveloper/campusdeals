@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     AnalyticsSummaryView,
+    GoogleLoginView,
     LoginView,
     MeView,
     PasswordChangeView,
@@ -16,6 +17,7 @@ from .views import (
 urlpatterns = [
     path('register/', RegisterView.as_view()),
     path('login/', LoginView.as_view()),
+    path('google/', GoogleLoginView.as_view()),
     path('refresh/', RefreshView.as_view()),
     path('me/', MeView.as_view()),
     path('profile/', ProfileView.as_view()),

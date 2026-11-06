@@ -20,6 +20,10 @@ git-ignored; do not commit secrets. Django loads it automatically, while
 environment variables already set by the shell or hosting platform take
 precedence. Leave `USE_CLOUDINARY=0` for local file storage, or add your
 Cloudinary credentials and set it to `1`.
+To enable Google sign-in locally, set `GOOGLE_CLIENT_ID` in this file and
+`NEXT_PUBLIC_GOOGLE_CLIENT_ID` in `frontend/.env.local` to the same OAuth web
+client ID. Add localhost and your deployed frontend origin to its authorized
+JavaScript origins in Google Cloud Console.
 
 1. Run migrations + create admin
 
@@ -110,6 +114,7 @@ Render environment variables to set (recommended):
 - `DJANGO_ALLOWED_HOSTS` (e.g. `your-service.onrender.com`)
 - `DJANGO_CSRF_TRUSTED_ORIGINS` (e.g. `https://your-service.onrender.com`)
 - `DATABASE_URL` (Supabase PostgreSQL connection URL)
+- `GOOGLE_CLIENT_ID` (Google OAuth web client ID; same value as the frontend)
 - `CORS_ALLOWED_ORIGINS` (your frontend URL)
 
 ### Connect Render to Supabase PostgreSQL
@@ -120,6 +125,11 @@ Render environment variables to set (recommended):
 4. Deploy the service. The configured build command runs `python manage.py migrate` against Supabase and creates/updates the schema.
 
 The app already reads `DATABASE_URL` and uses PostgreSQL when the value starts with `postgres://` or `postgresql://`; no database credentials belong in `render.yaml`. Moving from SQLite does not copy existing records. Export/import any data you need separately before switching production traffic.
+
+Set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` to the same Google OAuth web client ID in
+the frontend host's environment settings, then redeploy both frontend and
+backend. The backend verifies the ID token against `GOOGLE_CLIENT_ID`; the
+frontend value only enables Google's sign-in button.
 
 ## API endpoints implemented (matching frontend)
 

@@ -9,6 +9,7 @@ import Input from '@/components/atoms/Input';
 import Button from '@/components/atoms/Button';
 import { LogIn } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -20,6 +21,13 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    const finishLogin = () => {
+        const params = new URLSearchParams(window.location.search);
+        const redirect = params.get('redirect') || '/dashboard';
+        router.push(redirect);
+        router.refresh();
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -27,14 +35,25 @@ export default function LoginPage() {
         try {
             const { data } = await api.post('/auth/login/', formData);
             await login({ access: data.access, refresh: data.refresh }, formData.username);
-
-            const params = new URLSearchParams(window.location.search);
-            const redirect = params.get('redirect') || '/dashboard';
-            router.push(redirect);
-            router.refresh();
+            finishLogin();
         } catch (err: unknown) {
             const error = err as { response?: { data?: { detail?: string } } };
             setError(error.response?.data?.detail || 'Login failed. Please check your credentials.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleCredential = async (credential: string) => {
+        setLoading(true);
+        setError('');
+        try {
+            const { data } = await api.post('/auth/google/', { credential });
+            await login({ access: data.access, refresh: data.refresh }, data.username);
+            finishLogin();
+        } catch (err: unknown) {
+            const error = err as { response?: { data?: { detail?: string } } };
+            setError(error.response?.data?.detail || 'Google sign-in failed. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -106,6 +125,13 @@ export default function LoginPage() {
                             Sign in
                         </Button>
                     </form>
+
+                    <div className="my-6 flex items-center gap-3 text-xs font-medium text-secondary">
+                        <div className="h-px flex-1 bg-slate-200" />
+                        OR
+                        <div className="h-px flex-1 bg-slate-200" />
+                    </div>
+                    <GoogleAuthButton mode="login" onCredential={handleGoogleCredential} />
 
                     <div className="mt-8 border-t border-slate-100 pt-6 text-center">
                         <p className="text-sm text-secondary">

@@ -20,6 +20,8 @@ services:
       # Set this in Render to the Supabase Session pooler URL; do not commit credentials.
       - key: DATABASE_URL
         sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
       - key: USE_CLOUDINARY
         value: "1"
       - key: CLOUDINARY_CLOUD_NAME
