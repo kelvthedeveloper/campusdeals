@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import api from '@/utils/api';
 import Card from '@/components/molecules/Card';
 import Input from '@/components/atoms/Input';
@@ -70,7 +71,13 @@ export default function RegisterPage() {
         <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <Link href="/">
-                    <h2 className="text-center text-3xl font-extrabold text-primary mb-2">CampusDeals</h2>
+                    <Image
+                        src="/campusdeals-logo.png"
+                        alt="CampusDeals"
+                        width={260}
+                        height={56}
+                        className="mx-auto h-12 w-auto"
+                    />
                 </Link>
                 <h2 className="mt-6 text-center text-xl font-bold text-secondary">
                     Join the campus marketplace

@@ -243,6 +243,8 @@ Deploy `frontend/` as a separate Next.js application. Configure
 `NEXT_PUBLIC_BACKEND_ORIGIN` to the deployed Django backend origin and set
 `NEXT_PUBLIC_GOOGLE_CLIENT_ID` if Google sign-in is enabled. Set these values
 in the frontend hosting provider before building the app.
+For step-by-step Vercel setup, see
+[frontend/VERCEL_DEPLOYMENT.md](frontend/VERCEL_DEPLOYMENT.md).
 
 ## Security and credentials
 

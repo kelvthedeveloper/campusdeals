@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
     LayoutDashboard,
     Package,
@@ -63,7 +64,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Sidebar - Desktop */}
             <aside className="hidden lg:flex flex-col w-64 bg-[#1E3A4C] text-white fixed h-full transition-all duration-300">
                 <div className="p-6">
-                    <Link href="/admin" className="text-2xl font-bold tracking-tight">CampusDeals</Link>
+                    <Link href="/admin" className="inline-block">
+                        <Image
+                            src="/campusdeals-logo-white.png"
+                            alt="CampusDeals"
+                            width={260}
+                            height={56}
+                            className="h-10 w-auto"
+                        />
+                    </Link>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Admin Panel</p>
                 </div>
 

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Github, Twitter, Instagram, Mail } from 'lucide-react';
 
 export default function Footer() {
@@ -7,7 +8,13 @@ export default function Footer() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                     <div className="lg:col-span-4">
-                        <h2 className="text-2xl font-black tracking-tight">CampusDeals</h2>
+                        <Image
+                            src="/campusdeals-logo-white.png"
+                            alt="CampusDeals"
+                            width={260}
+                            height={56}
+                            className="h-10 w-auto"
+                        />
                         <p className="text-secondary text-sm leading-relaxed mt-3 max-w-sm">
                             A trusted student marketplace for campus-only listings, live auctions, and reliable services.
                         </p>

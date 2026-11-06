@@ -94,7 +94,14 @@ export default function Navbar() {
                     {/* Brand */}
                     <div className="flex-shrink-0">
                         <Link href="/" className="text-2xl font-bold text-primary tracking-tight">
-                            CampusDeals
+                            <Image
+                                src="/campusdeals-logo.png"
+                                alt="CampusDeals"
+                                width={260}
+                                height={56}
+                                className="h-10 w-auto"
+                                priority
+                            />
                         </Link>
                     </div>
 

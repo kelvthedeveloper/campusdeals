@@ -122,14 +122,33 @@ The frontend variable only enables the Google sign-in button.
 
 ## Create an administrator
 
-After the backend is deployed and migrations have completed, open the Render
-service's **Shell** and run:
+Render's free web services do not include Dashboard Shell or SSH access. Create
+the superuser from your local machine, connecting Django to the same Supabase
+database used by Render. First confirm the deployment completed its migrations.
 
-```shell
-python manage.py createsuperuser
+In PowerShell, from the repository root:
+
+```powershell
+Set-Location backend
+$env:DATABASE_URL = "PASTE_YOUR_SUPABASE_SESSION_POOLER_URL_HERE"
+.\.venv\Scripts\python.exe manage.py createsuperuser
+Remove-Item Env:DATABASE_URL
 ```
 
-Follow the prompts. Keep the admin password private.
+Use the Supabase Session pooler URL (port `5432`) configured in Render, with
+SSL enabled (for example `sslmode=require`). The command prompts for username,
+email, and password and writes the superuser to the connected Supabase
+database. Do not paste the connection URL into chat or commit it. The
+`DATABASE_URL` process variable overrides the blank or local value in
+`backend/.env`; removing it after the command avoids leaving it set in that
+PowerShell session.
+
+Then open `https://<your-backend-domain>/admin/` and log in with the
+superuser credentials. If the command reports that Django cannot connect,
+check the Supabase URL, password URL-encoding, SSL setting, and network access.
+
+If you later move the backend to a Render plan with Shell access, you can
+instead run `python manage.py createsuperuser` in the service shell.
 
 ## Verify the deployment
 
